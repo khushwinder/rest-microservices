@@ -18,13 +18,15 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
-public class UserJpaResource {
-
-	@Autowired
-	private UserDaoService userService;
+public class UserJpaResource {	
 
 	@Autowired
 	private UserRepository userRepository;
+	
+	
+	@Autowired
+	private PostRepository postRepository;
+	
 	// retrieveAllUsers
 
 	@GetMapping("/jpa/users")
@@ -55,10 +57,50 @@ public class UserJpaResource {
 		return ResponseEntity.created(uri).build();
 	}
 	
+	
+	@PostMapping("/jpa/users/{id}/posts")
+	public ResponseEntity<Object> createPost(@PathVariable int id, @Valid @RequestBody Post post) {
+		
+		Optional<User> userOptional = userRepository.findById(id);
+		if (!userOptional.isPresent()) {
+			throw new UserNotFoundException("user with id not found - "+ id);
+		}
+		
+		
+		User user = userOptional.get();
+		
+		post.setUser(user);
+		postRepository.save(post);
+
+		URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(post.getId())
+				.toUri();
+		
+		return ResponseEntity.created(uri).build();
+	}
+	
+	
 	@DeleteMapping("/jpa/user/{id}")
 	public void deleteUser(@PathVariable int id) {
 		
 		userRepository.deleteById(id);
+		
+	}
+	
+	// retrieveAllPosts
+
+	@GetMapping("/jpa/users/{id}/posts")
+	
+	public List<Post> getUserPosts(@PathVariable int id) {
+		
+		Optional<User> userOptional = userRepository.findById(id);
+		
+		if(!userOptional.isPresent()) {
+			
+			throw new UserNotFoundException("id- "+ id);
+			
+		}
+		
+		return userOptional.get().getPosts();
 		
 	}
 }
